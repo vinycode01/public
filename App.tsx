@@ -50,7 +50,7 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2 text-brand-600 font-bold text-2xl">
               <Gift className="w-8 h-8" />
-              <span>ValePresente.ai</span>
+              <span>ValePresente.Shop</span>
             </Link>
           </div>
           
