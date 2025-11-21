@@ -1,0 +1,8 @@
+{
+  "name": "Copy of ValePresente.ai 01",
+  "description": "A smart SaaS platform for purchasing and managing digital gift vouchers across various stores, featuring AI-assisted messaging and comprehensive dashboards.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
