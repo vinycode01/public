@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ShoppingBag, Store as StoreIcon, LogOut, Search, Gift, MapPin, CreditCard, 
   QrCode, CheckCircle, XCircle, Sparkles, Menu, X, Users, AlertCircle, ChevronRight, 
   Ban, Check, Eye, ExternalLink, Plus, Image as ImageIcon, Trash2, Settings, Upload, Loader2, DollarSign, Share2,
-  Navigation, Save, Copy, BarChart3, PieChart, HelpCircle, Key, Lock, Pencil, Wifi, Map, MessageCircle
+  Navigation, Save, Copy, BarChart3, PieChart
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import QRCode from "react-qr-code";
@@ -42,13 +42,6 @@ const prepareChartData = (vouchers: Voucher[]) => {
 
 const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleLogoutClick = () => {
-    onLogout();
-    navigate('/');
-    setIsMenuOpen(false);
-  };
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -57,7 +50,7 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2 text-brand-600 font-bold text-2xl">
               <Gift className="w-8 h-8" />
-              <span>ValePresente.shop</span>
+              <span>ValePresente.ai</span>
             </Link>
           </div>
           
@@ -79,7 +72,7 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
               <Link to="/dashboard/admin" className="flex items-center gap-1 text-brand-600 bg-brand-50 px-3 py-2 rounded-md text-sm font-medium"><LayoutDashboard size={18} /> Painel Admin</Link>
             )}
             {user && (
-              <button onClick={handleLogoutClick} className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition-colors"><LogOut size={16} /> Sair</button>
+              <button onClick={onLogout} className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition-colors"><LogOut size={16} /> Sair</button>
             )}
           </div>
            <div className="md:hidden flex items-center">
@@ -101,41 +94,12 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
                   {user.role === UserRole.BUYER && <Link to="/dashboard/buyer" className="block text-gray-600 py-2" onClick={() => setIsMenuOpen(false)}>Meus Vouchers</Link>}
                   {user.role === UserRole.STORE && <Link to="/dashboard/store" className="block text-gray-600 py-2" onClick={() => setIsMenuOpen(false)}>Painel da Loja</Link>}
                   {user.role === UserRole.ADMIN && <Link to="/dashboard/admin" className="block text-gray-600 py-2" onClick={() => setIsMenuOpen(false)}>Painel Admin</Link>}
-                  <button onClick={handleLogoutClick} className="block w-full text-left text-red-500 py-2">Sair</button>
+                  <button onClick={onLogout} className="block w-full text-left text-red-500 py-2">Sair</button>
                 </>
              )}
         </div>
       )}
     </nav>
-  );
-};
-
-const Footer = () => {
-  return (
-    <footer className="bg-brand-600 text-white py-10 mt-auto border-t border-brand-500">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex flex-col items-center md:items-start">
-           <div className="flex items-center gap-2 font-bold text-2xl mb-2">
-             <Gift className="w-6 h-6" />
-             <span>ValePresente.shop</span>
-           </div>
-           <p className="text-sm opacity-90">© {new Date().getFullYear()} Todos os direitos reservados.</p>
-        </div>
-        
-        <div className="flex flex-col items-center md:items-end gap-3">
-           <span className="text-sm font-medium opacity-90">Desenvolvido por Vale AI</span>
-           <a 
-             href="https://wa.me/5511999190904" 
-             target="_blank" 
-             rel="noopener noreferrer"
-             className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-5 py-2 rounded-full transition-colors text-sm font-bold shadow-sm"
-           >
-             <MessageCircle size={18} />
-             Whatsapp: 11 99919-0904
-           </a>
-        </div>
-      </div>
-    </footer>
   );
 };
 
@@ -225,95 +189,6 @@ const StoreDetailsModal = ({ store, isOpen, onClose }: { store: Store | null, is
   );
 };
 
-const EditStoreModal = ({ store, isOpen, onClose, onSave, categories, states }: { store: Store | null, isOpen: boolean, onClose: () => void, onSave: () => void, categories: string[], states: string[] }) => {
-  const [formData, setFormData] = useState<Partial<Store>>({});
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (store) {
-      setFormData({
-        name: store.name,
-        description: store.description,
-        category: store.category,
-        city: store.city,
-        state: store.state,
-        status: store.status
-      });
-    }
-  }, [store]);
-
-  const handleSave = async () => {
-    if (!store) return;
-    setSaving(true);
-    try {
-      await api.updateStoreData(store.id, formData);
-      onSave();
-      onClose();
-    } catch (error) {
-      alert('Erro ao atualizar loja: ' + getErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!isOpen || !store) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Pencil size={20}/> Editar Loja</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Loja</label>
-             <input type="text" className="w-full px-3 py-2 border rounded-md" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
-          </div>
-          <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-             <textarea className="w-full px-3 py-2 border rounded-md" rows={3} value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                <select className="w-full px-3 py-2 border rounded-md bg-white" value={formData.category || ''} onChange={e => setFormData({...formData, category: e.target.value})}>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-             </div>
-             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select className="w-full px-3 py-2 border rounded-md bg-white" value={formData.status || ''} onChange={e => setFormData({...formData, status: e.target.value as any})}>
-                  <option value="PENDING">Pendente</option>
-                  <option value="APPROVED">Aprovada</option>
-                  <option value="REJECTED">Recusada</option>
-                </select>
-             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
-                <input type="text" className="w-full px-3 py-2 border rounded-md" value={formData.city || ''} onChange={e => setFormData({...formData, city: e.target.value})} />
-             </div>
-             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select className="w-full px-3 py-2 border rounded-md bg-white" value={formData.state || ''} onChange={e => setFormData({...formData, state: e.target.value})}>
-                  {states.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-             </div>
-          </div>
-        </div>
-        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">Cancelar</button>
-          <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
-             {saving ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>} Salvar Alterações
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // --- Payment Modal Component ---
 const AsaasPaymentModal = ({ isOpen, onClose, amount, pixCode, encodedImage, onConfirm }: any) => {
   const [copied, setCopied] = useState(false);
@@ -368,63 +243,6 @@ const AsaasPaymentModal = ({ isOpen, onClose, amount, pixCode, encodedImage, onC
   );
 };
 
-// --- Forgot Password ---
-
-const ForgotPassword = ({ onCancel }: { onCancel: () => void }) => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-       await api.requestPasswordReset(email);
-       setSent(true);
-    } catch (e) {
-       alert(getErrorMessage(e));
-    } finally {
-       setLoading(false);
-    }
-  };
-
-  if (sent) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
-              <Check size={32}/>
-           </div>
-           <h2 className="text-2xl font-bold text-gray-800 mb-2">Email Enviado!</h2>
-           <p className="text-gray-600 mb-6">Verifique sua caixa de entrada (e spam). Enviamos um link para você redefinir sua senha.</p>
-           <button onClick={onCancel} className="text-brand-600 font-bold hover:underline">Voltar para o Login</button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-         <h2 className="text-2xl font-bold text-center mb-2 text-gray-800">Recuperar Senha</h2>
-         <p className="text-center text-gray-500 mb-6 text-sm">Digite seu email para receber o link de redefinição.</p>
-         <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">Email Cadastrado</label>
-               <input required type="email" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" value={email} onChange={e => setEmail(e.target.value)} />
-            </div>
-            <button type="submit" disabled={loading} className="w-full bg-brand-600 text-white py-2 rounded-lg font-bold hover:bg-brand-700 transition-colors disabled:opacity-70 flex justify-center">
-               {loading ? <Loader2 className="animate-spin"/> : 'Enviar Link de Recuperação'}
-            </button>
-         </form>
-         <div className="mt-4 text-center">
-            <button onClick={onCancel} className="text-gray-500 hover:text-gray-700 text-sm">Cancelar</button>
-         </div>
-      </div>
-    </div>
-  );
-};
-
 // --- Pages ---
 
 const StorePage = () => {
@@ -448,7 +266,6 @@ const StorePage = () => {
   const MIN_AMOUNT = 50;
 
   useEffect(() => {
-    window.scrollTo(0, 0); // Force scroll to top on open
     const session = localStorage.getItem('vp_user_session');
     if (session) setCurrentUser(JSON.parse(session));
     if (id) api.getStoreById(id).then(setStore);
@@ -675,9 +492,9 @@ const StorePage = () => {
                     onClick={() => {
                       let text = `Olá ${receiverName}! Te enviei um presente de R$ ${amount} na loja ${store.name}.`;
                       if (voucher.message) {
-                          text += `\n\nMensagem: "${voucher.message}"`;
+                          text += `\n\n💌 Mensagem: "${voucher.message}"`;
                       }
-                      text += `\n\nMostre o voucher na loja: Código ${voucher.code}`;
+                      text += `\n\n🎁 Acesse o voucher aqui: Código ${voucher.code}`;
                       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                     }}
                     className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
@@ -913,7 +730,7 @@ const DashboardStore = ({ user }: { user: User }) => {
                 </h2>
                 <div className="max-w-2xl">
                     <p className="text-gray-600 mb-4 text-sm">
-                        Para receber pagamentos diretamente, insira sua chave de API (Asaas) abaixo. 
+                        Para receber pagamentos diretamente, insira sua chave de API do Asaas abaixo. 
                     </p>
                     <div className="space-y-4">
                         <div>
@@ -1215,7 +1032,7 @@ const StoreRegister = ({ onLogin }: { onLogin: (u: User) => void }) => {
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden">
         <div className="bg-brand-600 px-8 py-6 text-white">
            <h2 className="text-2xl font-bold">Cadastro de Parceiro</h2>
-           <p className="opacity-90">Junte-se ao ValePresente.shop</p>
+           <p className="opacity-90">Junte-se ao ValePresente.ai</p>
         </div>
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {step === 1 ? (
@@ -1385,7 +1202,7 @@ const DashboardBuyer = ({ user }: { user: User }) => {
                              {voucher.status === 'ACTIVE' && (
                                 <button 
                                   onClick={() => {
-                                    let text = `Olá ${voucher.receiverName}! Te enviei um presente de R$ ${Number(voucher.amount).toFixed(2)}. Mostre o voucher na loja: Código ${voucher.code}`;
+                                    const text = `Olá ${voucher.receiverName}! Te enviei um presente de R$ ${Number(voucher.amount).toFixed(2)}. Acesse: Código ${voucher.code}`;
                                     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                                   }}
                                   className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors"
@@ -1422,7 +1239,6 @@ const DashboardAdmin = () => {
   const [newState, setNewState] = useState('');
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
-  const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'HOME' | 'REPORTS'>('HOME');
@@ -1475,18 +1291,6 @@ const DashboardAdmin = () => {
       alert(`Erro ao rejeitar: ${getErrorMessage(e)}`);
     } finally {
       setProcessingId(null);
-    }
-  };
-
-  const handleDeleteStore = async (id: string, name: string) => {
-    if (confirm(`Tem certeza que deseja excluir a loja "${name}"? Esta ação não pode ser desfeita e apagará todos os vouchers associados.`)) {
-      try {
-        await api.deleteStore(id);
-        alert('Loja excluída com sucesso.');
-        loadData();
-      } catch (e) {
-        alert(`Erro ao excluir: ${getErrorMessage(e)}`);
-      }
     }
   };
 
@@ -1632,15 +1436,12 @@ const DashboardAdmin = () => {
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button onClick={() => setSelectedStore(store)} className="text-gray-400 hover:text-brand-600" title="Ver Detalhes"><Eye size={18}/></button>
-                        <button onClick={() => setEditingStore(store)} className="text-blue-600 hover:text-blue-800" title="Editar"><Pencil size={18}/></button>
-                        <button onClick={() => handleDeleteStore(store.id, store.name)} className="text-red-600 hover:text-red-800" title="Excluir"><Trash2 size={18}/></button>
-                        
                         {store.status === 'PENDING' && (
                           <>
                             <button 
                               onClick={() => handleApprove(store.id)} 
                               disabled={processingId === store.id}
-                              className="text-green-600 hover:text-green-800 font-medium text-sm disabled:opacity-50 ml-2"
+                              className="text-green-600 hover:text-green-800 font-medium text-sm disabled:opacity-50"
                             >
                               {processingId === store.id ? '...' : 'Aprovar'}
                             </button>
@@ -1721,14 +1522,6 @@ const DashboardAdmin = () => {
         )}
       </div>
       <StoreDetailsModal store={selectedStore} isOpen={!!selectedStore} onClose={() => setSelectedStore(null)} />
-      <EditStoreModal 
-        store={editingStore} 
-        isOpen={!!editingStore} 
-        onClose={() => setEditingStore(null)} 
-        onSave={loadData}
-        categories={categories}
-        states={states}
-      />
     </div>
   );
 };
@@ -1759,22 +1552,19 @@ const App = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
+      <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
         <Navbar user={user} onLogout={handleLogout} />
-        <div className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/store/:id" element={<StorePage />} />
-            <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
-            <Route path="/register-store" element={!user ? <StoreRegister onLogin={handleLogin} /> : <Navigate to="/" />} />
-            
-            {/* Protected Routes */}
-            <Route path="/dashboard/admin" element={user && user.role === UserRole.ADMIN ? <DashboardAdmin /> : <Navigate to="/login" />} />
-            <Route path="/dashboard/store" element={user && user.role === UserRole.STORE ? <DashboardStore user={user} /> : <Navigate to="/login" />} />
-            <Route path="/dashboard/buyer" element={user && user.role === UserRole.BUYER ? <DashboardBuyer user={user} /> : <Navigate to="/login" />} />
-          </Routes>
-        </div>
-        <Footer />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/store/:id" element={<StorePage />} />
+          <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
+          <Route path="/register-store" element={!user ? <StoreRegister onLogin={handleLogin} /> : <Navigate to="/" />} />
+          
+          {/* Protected Routes */}
+          <Route path="/dashboard/admin" element={user && user.role === UserRole.ADMIN ? <DashboardAdmin /> : <Navigate to="/login" />} />
+          <Route path="/dashboard/store" element={user && user.role === UserRole.STORE ? <DashboardStore user={user} /> : <Navigate to="/login" />} />
+          <Route path="/dashboard/buyer" element={user && user.role === UserRole.BUYER ? <DashboardBuyer user={user} /> : <Navigate to="/login" />} />
+        </Routes>
       </div>
     </Router>
   );

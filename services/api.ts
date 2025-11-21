@@ -77,33 +77,6 @@ export const api = {
     return true;
   },
 
-  // Admin: Editar dados da loja
-  updateStoreData: async (id: string, updates: Partial<Store>) => {
-    const { error } = await supabase.from('stores').update({
-      name: updates.name,
-      description: updates.description,
-      category: updates.category,
-      city: updates.city,
-      state: updates.state,
-      status: updates.status
-    }).eq('id', id);
-    
-    if (error) throw error;
-    return true;
-  },
-
-  // Admin: Excluir loja (e limpar vouchers órfãos)
-  deleteStore: async (id: string) => {
-    // 1. Primeiro exclui vouchers associados para evitar erro de FK
-    await supabase.from('vouchers').delete().eq('store_id', id);
-    
-    // 2. Exclui a loja
-    const { error } = await supabase.from('stores').delete().eq('id', id);
-    if (error) throw error;
-    
-    return true;
-  },
-
   updateStoreImages: async (id: string, images: string[]) => {
     const { error } = await supabase.from('stores').update({ images }).eq('id', id);
     if (error) throw error;
@@ -138,13 +111,6 @@ export const api = {
     const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
     if (error || !data) return undefined;
     return mapUser(data);
-  },
-
-  requestPasswordReset: async (email: string) => {
-    // Simula o envio de email (em produção usaria supabase.auth.resetPasswordForEmail ou backend próprio)
-    const { data } = await supabase.from('users').select('email').eq('email', email).single();
-    if (!data) throw new Error("Email não encontrado.");
-    return true; 
   },
 
   registerBuyer: async (name: string, email: string) => {
@@ -333,7 +299,9 @@ export const api = {
 
     const json = await res.json();
 
-    // Se já existe, o Asaas retorna erro 400 mas a gente pode buscar pelo email
+    // Se já existe, o Asaas retorna erro 400 mas a gente pode buscar pelo email (ou apenas tratar o erro se a API retornasse o ID, mas o Asaas não retorna ID no erro de duplicidade facilmente). 
+    // Simplificação: Se der erro de email duplicado, vamos tentar buscar o cliente.
+    
     if (!res.ok) {
          if (json.errors?.[0]?.code === 'CUSTOMER_EMAIL_ALREADY_EXISTS' || json.errors?.[0]?.code === 'CUSTOMER_CPF_CNPJ_ALREADY_EXISTS') {
              // Buscar cliente existente
@@ -353,30 +321,12 @@ export const api = {
 
   // Categorias
   getCategories: async () => {
-    const { data } = await supabase.from('categories').select('name').order('name');
+    const { data } = await supabase.from('categories').select('name');
     return (data || []).map((c: any) => c.name);
   },
 
   addCategory: async (name: string) => {
     const { error } = await supabase.from('categories').insert({ name });
-    if (error) throw error;
-    return true;
-  },
-
-  updateCategory: async (oldName: string, newName: string) => {
-    // 1. Atualiza a tabela de categorias
-    const { error } = await supabase.from('categories').update({ name: newName }).eq('name', oldName);
-    if (error) throw error;
-    
-    // 2. Atualiza todas as lojas que usavam a categoria antiga (Opcional mas recomendado)
-    // Como 'category' na tabela stores é apenas texto, precisamos atualizar lá também para não quebrar filtros
-    await supabase.from('stores').update({ category: newName }).eq('category', oldName);
-    
-    return true;
-  },
-
-  deleteCategory: async (name: string) => {
-    const { error } = await supabase.from('categories').delete().eq('name', name);
     if (error) throw error;
     return true;
   },
