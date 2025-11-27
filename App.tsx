@@ -103,6 +103,28 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
   );
 };
 
+// --- Footer Component ---
+const Footer = () => {
+  return (
+    <footer className="bg-white border-t border-gray-200 py-8 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="text-gray-500 text-sm">
+          © {new Date().getFullYear()} ValePresente.Shop. Todos os direitos reservados.
+        </div>
+        <a 
+          href="https://wa.me/5511999190904" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="flex items-center gap-2 text-green-600 hover:text-green-700 font-medium transition-colors"
+        >
+          <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-5 h-5" />
+          (11) 9 9919-0904
+        </a>
+      </div>
+    </footer>
+  );
+};
+
 const StoreCard: React.FC<{ store: Store }> = ({ store }) => {
   return (
     <Link to={`/store/${store.id}`} className="group bg-white rounded-xl shadow-sm hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
@@ -138,7 +160,7 @@ const StoreDetailsModal = ({ store, isOpen, onClose }: { store: Store | null, is
   
   useEffect(() => {
     if (store) {
-      api.getUserById(store.ownerId).then(setOwner);
+      api.getUserById(store.ownerId).then(v => setOwner(v || undefined));
     }
   }, [store]);
 
@@ -1552,19 +1574,22 @@ const App = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+      <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
         <Navbar user={user} onLogout={handleLogout} />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/store/:id" element={<StorePage />} />
-          <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
-          <Route path="/register-store" element={!user ? <StoreRegister onLogin={handleLogin} /> : <Navigate to="/" />} />
-          
-          {/* Protected Routes */}
-          <Route path="/dashboard/admin" element={user && user.role === UserRole.ADMIN ? <DashboardAdmin /> : <Navigate to="/login" />} />
-          <Route path="/dashboard/store" element={user && user.role === UserRole.STORE ? <DashboardStore user={user} /> : <Navigate to="/login" />} />
-          <Route path="/dashboard/buyer" element={user && user.role === UserRole.BUYER ? <DashboardBuyer user={user} /> : <Navigate to="/login" />} />
-        </Routes>
+        <div className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/store/:id" element={<StorePage />} />
+            <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
+            <Route path="/register-store" element={!user ? <StoreRegister onLogin={handleLogin} /> : <Navigate to="/" />} />
+            
+            {/* Protected Routes */}
+            <Route path="/dashboard/admin" element={user && user.role === UserRole.ADMIN ? <DashboardAdmin /> : <Navigate to="/login" />} />
+            <Route path="/dashboard/store" element={user && user.role === UserRole.STORE ? <DashboardStore user={user} /> : <Navigate to="/login" />} />
+            <Route path="/dashboard/buyer" element={user && user.role === UserRole.BUYER ? <DashboardBuyer user={user} /> : <Navigate to="/login" />} />
+          </Routes>
+        </div>
+        <Footer />
       </div>
     </Router>
   );
