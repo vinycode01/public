@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, Link, useNavigate, useParams } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { User, UserRole, Store, Voucher } from './types';
 import { api } from './services/api';
 import { generateGiftMessage } from './services/geminiService';
@@ -39,6 +39,17 @@ const prepareChartData = (vouchers: Voucher[]) => {
 };
 
 // --- Components ---
+
+// Componente auxiliar para rolar para o topo na mudança de rota
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
 
 const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -1574,6 +1585,7 @@ const App = () => {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
         <Navbar user={user} onLogout={handleLogout} />
         <div className="flex-grow">
