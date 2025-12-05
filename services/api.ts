@@ -90,6 +90,52 @@ export const api = {
     return true;
   },
 
+  // Editar dados da loja (nome, descrição, cidade, estado, categoria, imagens)
+  updateStore: async (id: string, payload: Partial<{ name: string; description: string; category: string; city: string; state: string; images: string[] }>) => {
+    const updatePayload: any = {};
+    if (payload.name !== undefined) updatePayload.name = payload.name;
+    if (payload.description !== undefined) updatePayload.description = payload.description;
+    if (payload.category !== undefined) updatePayload.category = payload.category;
+    if (payload.city !== undefined) updatePayload.city = payload.city;
+    if (payload.state !== undefined) updatePayload.state = payload.state;
+    if (payload.images !== undefined) updatePayload.images = payload.images;
+
+    if (Object.keys(updatePayload).length === 0) return false; // nada a atualizar
+
+    const { error } = await supabase.from('stores').update(updatePayload).eq('id', id);
+    if (error) {
+      console.error('Erro ao atualizar loja:', error);
+      throw error;
+    }
+    return true;
+  },
+
+  // Deletar loja: remove vouchers vinculados e a própria loja. Não deleta automaticamente o usuário proprietário.
+  deleteStore: async (id: string) => {
+    // 1) Buscar loja para obter owner_id
+    const { data: storeData, error: sErr } = await supabase.from('stores').select('*').eq('id', id).single();
+    if (sErr || !storeData) {
+      console.error('Loja não encontrada para exclusão:', sErr);
+      throw new Error('Loja não encontrada');
+    }
+
+    // 2) Deletar vouchers relacionados
+    const { error: vErr } = await supabase.from('vouchers').delete().eq('store_id', id);
+    if (vErr) {
+      console.error('Erro ao deletar vouchers da loja:', vErr);
+      throw vErr;
+    }
+
+    // 3) Deletar a loja
+    const { error: delErr } = await supabase.from('stores').delete().eq('id', id);
+    if (delErr) {
+      console.error('Erro ao deletar loja:', delErr);
+      throw delErr;
+    }
+
+    return true;
+  },
+
   // Usuários e Autenticação
   login: async (email: string, password?: string) => {
     const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
@@ -122,6 +168,12 @@ export const api = {
     if (error) throw error;
     return { id, name, email, role: UserRole.BUYER } as User;
   },
+
+  // Observação importante:
+  // Compradores (BUYER) não precisam criar conta com login/senha para comprar.
+  // O fluxo atual permite compras como convidado — a função `registerBuyer` cria um registro mínimo
+  // com `name` e `email` (quando fornecido) e `role: 'BUYER'`. Não há autenticação completa
+  // necessária para o comprador no processo de checkout.
 
   registerStore: async (
     storeData: Omit<Store, 'id' | 'ownerId' | 'status' | 'createdAt' | 'paymentConfig'>,

@@ -1272,6 +1272,9 @@ const DashboardAdmin = () => {
   const [newState, setNewState] = useState('');
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Store> | null>(null);
+  const [showDeleteConfirmId, setShowDeleteConfirmId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'HOME' | 'REPORTS'>('HOME');
@@ -1385,6 +1388,46 @@ const DashboardAdmin = () => {
   
   const chartData = prepareChartData(vouchers);
 
+  // Handlers for edit / delete
+  const handleSaveEdit = async () => {
+    if (!editingStore || !editForm) return;
+    setProcessingId(editingStore.id);
+    try {
+      const payload: any = {};
+      if (editForm.name !== undefined) payload.name = editForm.name;
+      if (editForm.description !== undefined) payload.description = editForm.description;
+      if (editForm.category !== undefined) payload.category = editForm.category;
+      if (editForm.city !== undefined) payload.city = editForm.city;
+      if (editForm.state !== undefined) payload.state = editForm.state;
+      if (editForm.images !== undefined) payload.images = editForm.images;
+
+      await api.updateStore(editingStore.id, payload);
+      alert('Loja atualizada com sucesso.');
+      setEditingStore(null);
+      setEditForm(null);
+      loadData();
+    } catch (e) {
+      alert(`Erro ao atualizar loja: ${getErrorMessage(e)}`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleConfirmDelete = async (id: string) => {
+    if (!confirm('Deseja realmente deletar esta loja e todos os seus vouchers? Esta ação é irreversível.')) return;
+    setProcessingId(id);
+    try {
+      await api.deleteStore(id);
+      alert('Loja deletada com sucesso.');
+      setShowDeleteConfirmId(null);
+      loadData();
+    } catch (e) {
+      alert(`Erro ao deletar loja: ${getErrorMessage(e)}`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -1469,6 +1512,11 @@ const DashboardAdmin = () => {
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button onClick={() => setSelectedStore(store)} className="text-gray-400 hover:text-brand-600" title="Ver Detalhes"><Eye size={18}/></button>
+
+                        <button onClick={() => { setEditingStore(store); setEditForm({ name: store.name, description: store.description, category: store.category, city: store.city, state: store.state, images: store.images }); }} className="text-gray-500 hover:text-brand-600 ml-2" title="Editar Loja"><Settings size={18}/></button>
+
+                        <button onClick={() => setShowDeleteConfirmId(store.id)} className="text-red-500 hover:text-red-700 ml-2" title="Deletar Loja"><Trash2 size={18}/></button>
+
                         {store.status === 'PENDING' && (
                           <>
                             <button 
@@ -1555,9 +1603,83 @@ const DashboardAdmin = () => {
         )}
       </div>
       <StoreDetailsModal store={selectedStore} isOpen={!!selectedStore} onClose={() => setSelectedStore(null)} />
+
+      {/* Modal de Edição da Loja */}
+      {editingStore && editForm && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[80vh] overflow-y-auto">
+            <div className="bg-brand-600 px-6 py-4 border-b border-brand-700 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">Editar Loja</h3>
+              <button onClick={() => { setEditingStore(null); setEditForm(null); }} className="text-white/80 hover:text-white"><X size={24} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Loja</label>
+                <input type="text" value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <textarea value={editForm.description || ''} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                  <select value={editForm.category || ''} onChange={e => setEditForm({ ...editForm, category: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500">
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                  <select value={editForm.state || ''} onChange={e => setEditForm({ ...editForm, state: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500">
+                    {states.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                <input type="text" value={editForm.city || ''} onChange={e => setEditForm({ ...editForm, city: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500" />
+              </div>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-2 border-t border-gray-100">
+              <button onClick={() => { setEditingStore(null); setEditForm(null); }} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium">Cancelar</button>
+              <button onClick={handleSaveEdit} disabled={processingId === editingStore.id} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-2">
+                {processingId === editingStore.id ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>}
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteConfirmId && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-red-50 px-6 py-4 border-b border-red-200">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="text-red-600" size={24} />
+                <h3 className="text-lg font-bold text-red-900">Confirmar Exclusão</h3>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Deseja realmente deletar esta loja e <strong>todos os seus vouchers</strong>? Esta ação é <strong>irreversível</strong> e não pode ser desfeita.
+              </p>
+            </div>
+            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-2 border-t border-gray-100">
+              <button onClick={() => setShowDeleteConfirmId(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium">Cancelar</button>
+              <button onClick={() => handleConfirmDelete(showDeleteConfirmId)} disabled={processingId === showDeleteConfirmId} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-2">
+                {processingId === showDeleteConfirmId ? <Loader2 className="animate-spin" size={16}/> : <Trash2 size={16}/>}
+                Deletar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
